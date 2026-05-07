@@ -2,7 +2,7 @@ name: CI/CD Backend Node.js
 
 on:
   push:
-    branches: ["develop"]
+    branches: ["d"]
   workflow_dispatch:
 
 jobs:
