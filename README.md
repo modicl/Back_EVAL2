@@ -8,7 +8,7 @@ Backend API desarrollado en JavaScript con Node.js y Express framework. Proporci
 
 ### Lenguajes y Runtime
 
-- **Node.js**: Versión 18.0.0 o superior
+- **Node.js**: Versión 18.0.0 o superior!
 - **npm**: Versión 8.0.0 o superior (incluido con Node.js)
 
 ### Dependencias Principales
