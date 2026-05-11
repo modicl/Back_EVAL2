@@ -110,3 +110,78 @@ backend/
 - Asegúrate de tener MySQL instalado y corriendo antes de iniciar el backend
 - La base de datos `proyecto_db` debe existir (ver proyecto `database/`)
 - El servidor se reiniciará automáticamente en modo desarrollo si usas `npm run dev`
+
+---
+
+## CI/CD con GitHub Actions
+
+El pipeline se define en `.github/workflows/ci-cd.yml` y se ejecuta automáticamente al hacer push a las ramas `main` o `develop`.
+
+### Flujo del pipeline
+
+```
+push a main / develop
+        │
+        ▼
+┌───────────────────┐
+│  build-and-push   │  Construye la imagen Docker y la publica en Docker Hub
+│                   │  Tags: :latest  y  :<git-sha>
+└────────┬──────────┘
+         │ (solo si rama = main)
+         ▼
+┌──────────────────────────────────────┐
+│  deploy (vía Bastion Host)           │
+│                                      │
+│  GitHub Actions                      │
+│      → SSH → EC2 pública (bastion)   │
+│          → SSH → EC2 privada backend │
+│              pull → reemplaza        │
+│              contenedor → prune      │
+└──────────────────────────────────────┘
+```
+
+> El backend vive en una EC2 privada sin acceso directo desde Internet.
+> El pipeline entra primero a la EC2 pública del frontend (Bastion Host) y desde ahí salta a la EC2 privada del backend.
+
+### Secrets requeridos en GitHub
+
+Configura los siguientes secrets en **Settings → Secrets and variables → Actions** del repositorio:
+
+| Secret | Descripción |
+|--------|-------------|
+| `DOCKERHUB_USERNAME` | Usuario de Docker Hub |
+| `DOCKERHUB_TOKEN` | Access Token de Docker Hub (no tu contraseña) |
+| `BASTION_HOST` | IP pública de la EC2 del frontend (Bastion Host) |
+| `BASTION_USER` | Usuario SSH del bastion (ej. `ubuntu`) |
+| `BASTION_SSH_KEY` | Clave privada SSH del bastion (contenido del `.pem`) |
+| `EC2_HOST` | IP privada de la EC2 del backend |
+| `EC2_USER` | Usuario SSH de la EC2 backend (ej. `ubuntu`) |
+| `EC2_SSH_KEY` | Clave privada SSH del backend (contenido del `.pem`) |
+
+### Archivo de entorno en la EC2 del backend
+
+El contenedor lee sus variables desde `/home/<EC2_USER>/.env.backend`.  
+Crea ese archivo en la instancia antes del primer despliegue:
+
+```bash
+# En la EC2 privada del backend
+cat > ~/.env.backend <<EOF
+PORT=3000
+DB_HOST=<IP-PRIVADA-RDS-O-MYSQL>
+DB_USER=root
+DB_PASSWORD=<contraseña-segura>
+DB_NAME=proyecto_db
+DB_PORT=3306
+EOF
+```
+
+### Imagen publicada
+
+```
+docker.io/<DOCKERHUB_USERNAME>/backend-eval2:latest
+docker.io/<DOCKERHUB_USERNAME>/backend-eval2:<git-sha>
+```
+
+### Ejecución manual
+
+El workflow puede dispararse manualmente desde **Actions → CI/CD Backend Node.js → Run workflow**.
