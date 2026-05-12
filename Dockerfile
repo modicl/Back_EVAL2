@@ -1,20 +1,20 @@
-# Usa una imagen oficial de Node.js como base, versión alpine para que sea más ligera
-FROM node:18-alpine
+# Etapa 1: Instalar dependencias de producción
+FROM node:18-alpine AS deps
 
-# Establece el directorio de trabajo dentro del contenedor
 WORKDIR /app
 
-# Copia primero los archivos de dependencias para aprovechar el caché de capas de Docker
 COPY package*.json ./
-
-# Instala las dependencias (solo las de producción)
 RUN npm install --production
 
-# Copia el resto del código de la aplicación al contenedor
+# Etapa 2: Imagen final de producción
+FROM node:18-alpine AS production
+
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
+
 COPY . .
 
-# Expone el puerto 3000 en el que escucha el backend Node.js
 EXPOSE 3000
 
-# Comando para ejecutar la aplicación cuando inicie el contenedor
 CMD ["npm", "start"]
