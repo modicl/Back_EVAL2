@@ -115,19 +115,19 @@ backend/
 
 ## CI/CD con GitHub Actions
 
-El pipeline se define en `.github/workflows/ci-cd.yml` y se ejecuta automáticamente al hacer push a las ramas `main` o `develop`.
+El pipeline se define en `.github/workflows/ci-cd.yml` y se ejecuta automáticamente al hacer push a la rama `deploy`.
 
 ### Flujo del pipeline
 
 ```
-push a main / develop
+push a deploy
         │
         ▼
 ┌───────────────────┐
 │  build-and-push   │  Construye la imagen Docker y la publica en Docker Hub
 │                   │  Tags: :latest  y  :<git-sha>
 └────────┬──────────┘
-         │ (solo si rama = main)
+         │ (solo si rama = deploy)
          ▼
 ┌──────────────────────────────────────┐
 │  deploy (vía Bastion Host)           │
